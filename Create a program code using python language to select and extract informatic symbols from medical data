@@ -1,0 +1,111 @@
+import re
+from typing import Dict, List, Set
+
+class MedicalSymbolExtractor:
+    def __init__(self):
+        self.common_symbols = {
+            '↑': 'increased',
+            '↓': 'decreased',
+            '°': 'temperature',
+            'Δ': 'change',
+            '±': 'plus/minus',
+            'μ': 'micro',
+            '♀': 'female',
+            '♂': 'male',
+            '@': 'at',
+            'Ø': 'diameter/none',
+            '→': 'leads to',
+            '⚕': 'medical symbol'
+        }
+        
+        self.units = {
+            'mmHg': 'blood pressure',
+            'bpm': 'heart rate',
+            'kg': 'weight',
+            'mg/dL': 'concentration',
+            'mL': 'volume'
+        }
+        
+    def extract_symbols(self, text: str) -> Dict[str, List[str]]:
+        """Extract medical symbols and their contexts from text."""
+        results = {
+            'symbols': [],
+            'units': [],
+            'contexts': []
+        }
+        
+        # Extract symbols
+        for symbol in self.common_symbols:
+            if symbol in text:
+                results['symbols'].append({
+                    'symbol': symbol,
+                    'meaning': self.common_symbols[symbol],
+                    'count': text.count(symbol)
+                })
+        
+        # Extract units
+        for unit in self.units:
+            if unit in text:
+                results['units'].append({
+                    'unit': unit,
+                    'measurement': self.units[unit],
+                    'count': text.count(unit)
+                })
+                
+        # Extract numeric contexts
+        number_pattern = r'\d+(?:\.\d+)?(?:\s*[%°±]|\s*[a-zA-Z]+/[a-zA-Z]+)?'
+        numbers_with_context = re.finditer(number_pattern, text)
+        for match in numbers_with_context:
+            results['contexts'].append(match.group())
+            
+        return results
+
+    def analyze_text(self, text: str) -> Dict:
+        """Analyze medical text and provide comprehensive symbol analysis."""
+        extracted_data = self.extract_symbols(text)
+        
+        analysis = {
+            'total_symbols': len(extracted_data['symbols']),
+            'total_units': len(extracted_data['units']),
+            'numeric_contexts': len(extracted_data['contexts']),
+            'details': extracted_data
+        }
+        
+        return analysis
+
+# Example usage
+if __name__ == "__main__":
+    extractor = MedicalSymbolExtractor()
+    
+    # Example medical text
+    sample_text = """
+    Patient shows ↑BP 140/90 mmHg
+    Temperature: 38.5°
+    O₂ saturation: 98%
+    ♀ patient, 45yo
+    Δ in heart rate: 72 → 85 bpm
+    Medication: 500mg/dL ± 50mg/dL
+    """
+    
+    # Analyze the text
+    analysis = extractor.analyze_text(sample_text)
+    
+    # Print results
+    print("Medical Symbol Analysis:")
+    print("-" * 20)
+    print(f"Total symbols found: {analysis['total_symbols']}")
+    print(f"Total units found: {analysis['total_units']}")
+    print(f"Numeric contexts found: {analysis['numeric_contexts']}")
+    print("\nDetailed Analysis:")
+    
+    for symbol_info in analysis['details']['symbols']:
+        print(f"Symbol: {symbol_info['symbol']}")
+        print(f"Meaning: {symbol_info['meaning']}")
+        print(f"Occurrences: {symbol_info['count']}")
+        print()
+    
+    for unit_info in analysis['details']['units']:
+        print(f"Unit: {unit_info['unit']}")
+        print(f"Measures: {unit_info['measurement']}")
+        print(f"Occurrences: {unit_info['count']}")
+        print()
